@@ -1,5 +1,6 @@
 "use client";
 
+import { ContactoCitas } from "@/components/bookings/contacto-citas";
 import { HANDOFF_LABELS } from "@/lib/eventos-hilo";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -367,7 +368,8 @@ export function ContactPanel({
 
         {/* Ficha: lo que se SABE del lead. Va antes de Notas —lo que alguien
             OPINA— porque es lo que se consulta a mitad de una conversación. */}
-        <FichaPanel ficha={ficha} onSave={saveFicha} />
+        <ContactoCitas key={contactId} contactId={contactId} />
+          <FichaPanel ficha={ficha} onSave={saveFicha} />
 
         {/* Notas */}
         <section className={cn("p-4", onDeleteConversation && "border-b")}>

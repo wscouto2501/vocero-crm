@@ -1,5 +1,6 @@
 import {
   CalendarDays,
+  Building2,
   ChartColumn,
   FlaskConical,
   Inbox,
@@ -49,10 +50,12 @@ export const SETTINGS_ITEM: NavItem = {
  */
 export function appNavGroups({
   agenda = false,
+  inmobiliaria = false,
   role,
 }: {
   /** 015 — "Citas" solo existe si esta instancia encendió la agenda. */
   agenda?: boolean;
+  inmobiliaria?: boolean;
   /** #86 — La guía de inicio solo para quien puede configurar. */
   role?: string | null;
 }): NavGroup[] {
@@ -64,6 +67,8 @@ export function appNavGroups({
   // Citas va después de Contactos: es el paso siguiente de un trato, no una
   // sección aparte.
   if (agenda) trabajo.push({ href: "/bookings", label: "Citas", icon: CalendarDays });
+
+  if (inmobiliaria) trabajo.push({ href: "/real-estate", label: "Gestão Imobiliária", icon: Building2 });
 
   const agente: NavItem[] = [];
   // Un miembro del equipo no puede hacer ninguno de los pasos de la guía.

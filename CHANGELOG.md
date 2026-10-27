@@ -5,21 +5,6 @@ sigue el SemVer del [README](README.md#versiones): una menor trae funciones
 nuevas y actualizar es redesplegar. Desde 1.4.0, cada tag `vX.Y.Z` publica la
 imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
 
-## 2.5.2 — 2026-10-27
-
-Una Bandeja rápida con muchos mensajes. Actualizar es redesplegar con la
-etiqueta `2.5.2`: no hay migraciones ni variables nuevas. Nea no cambia.
-
-### Arreglado
-
-- **La lista de conversaciones ya no se arrastra** (064). Con decenas de
-  miles de mensajes, la Bandeja tardaba segundos y saturaba Postgres.
-  - La vista previa del último mensaje usa el índice: de ~750 ms a ~2 ms con
-    40 000 mensajes y 300 conversaciones.
-  - Una ráfaga de mensajes recarga la lista una vez, no cuatro por mensaje:
-    10 mensajes seguidos pasan de 40 peticiones a 2–3. La Bandeja, el
-    contador del menú y Ctrl+K comparten la misma lista.
-
 ## 2.5.1 — 2026-10-25
 
 Un retoque de interfaz. Actualizar es redesplegar con la etiqueta `2.5.1`: no

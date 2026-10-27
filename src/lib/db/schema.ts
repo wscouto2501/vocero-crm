@@ -862,6 +862,13 @@ export const booking = pgTable(
     linkPending: boolean("link_pending").notNull().default(false),
     /** Conversación del Laboratorio: jamás llama a un conector real. */
     isTest: boolean("is_test").notNull().default(false),
+    title: text("title"),
+    description: text("description"),
+    appointmentType: text("appointment_type"),
+    location: text("location"),
+    responsibleUserId: text("responsible_user_id").references(() => user.id, { onDelete: "set null" }),
+    confirmedAt: timestamp("confirmed_at"),
+    reminderMinutes: integer("reminder_minutes"),
     notes: text("notes"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -1395,3 +1402,44 @@ export const conversationNote = pgTable(
     index("conversation_note_conv_idx").on(t.organizationId, t.conversationId, t.createdAt),
   ]
 );
+
+/** 063 — Auditoría del formulario de citas, sin borrado físico. */
+export const bookingHistory = pgTable("booking_history", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organization.id, { onDelete: "cascade" }),
+  bookingId: text("booking_id").notNull().references(() => booking.id, { onDelete: "cascade" }),
+  actorUserId: text("actor_user_id").references(() => user.id, { onDelete: "set null" }),
+  before: jsonb("before"),
+  after: jsonb("after").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [index("booking_history_org_booking_idx").on(t.organizationId, t.bookingId, t.createdAt)]);
+
+/* 064 — Gestión inmobiliaria opcional. El payload se valida con lib/inmobiliaria. */
+export const inmuebleRegistro = pgTable("inmueble_registro", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organization.id, { onDelete: "cascade" }),
+  tipo: text("tipo").notNull(),
+  codigo: text("codigo"),
+  datos: jsonb("datos").$type<import("@/lib/inmobiliaria").Datos>().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+}, (t) => ({ orgTipo: index("inmueble_registro_org_tipo_idx").on(t.organizationId, t.tipo), codigoUnico: uniqueIndex("inmueble_registro_org_codigo_idx").on(t.organizationId, t.codigo) }));
+
+export const inmuebleHistorial = pgTable("inmueble_historial", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organization.id, { onDelete: "cascade" }),
+  registroId: text("registro_id").notNull().references(() => inmuebleRegistro.id, { onDelete: "cascade" }),
+  usuarioId: text("usuario_id").notNull(),
+  anterior: jsonb("anterior").$type<import("@/lib/inmobiliaria").Datos>(),
+  nuevo: jsonb("nuevo").$type<import("@/lib/inmobiliaria").Datos>().notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => ({ orgRegistro: index("inmueble_historial_org_registro_idx").on(t.organizationId, t.registroId) }));
+
+export const inmuebleAdjunto = pgTable("inmueble_adjunto", {
+  id: text("id").primaryKey(),
+  organizationId: text("organization_id").notNull().references(() => organization.id, { onDelete: "cascade" }),
+  registroId: text("registro_id").notNull().references(() => inmuebleRegistro.id, { onDelete: "cascade" }),
+  nombre: text("nombre").notNull(),
+  mime: text("mime").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => ({ orgRegistro: index("inmueble_adjunto_org_registro_idx").on(t.organizationId, t.registroId) }));

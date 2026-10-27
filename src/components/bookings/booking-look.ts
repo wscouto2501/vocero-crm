@@ -14,12 +14,14 @@ export const STATUS_LABEL: Record<Booking["status"], string> = {
 /** Un bloqueo no se "agenda" ni se "cancela": está activo o se quitó. */
 export function statusLabel(b: Booking): string {
   if (b.kind === "block") return b.status === "cancelada" ? "Quitado" : "Activo";
+  if (b.status === "agendada" && b.confirmedAt) return "Confirmada";
   return STATUS_LABEL[b.status];
 }
 
 /** Lo que se lee en la rejilla: el contacto o, en un bloqueo, su nota. */
 export function bookingTitle(b: Booking): string {
   if (b.kind === "block") return b.notes?.trim() || "Bloqueo";
+  if (b.title) return b.title;
   return b.contact?.name.trim() || "Sin contacto";
 }
 

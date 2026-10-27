@@ -1,0 +1,9 @@
+# Solo al instalar expresamente el adaptador del cerebro:
+# docker compose -f docker-compose.yml -f docker-compose.inmobiliaria.yml up -d --build app nea
+services:
+  nea:
+    image: vocero-nea-inmobiliaria:local
+    build:
+      context: ./integrations/nea-inmobiliaria
+      args:
+        NEA_VERSION: ${NEA_VERSION:-2.0.2}

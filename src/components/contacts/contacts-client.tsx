@@ -1,5 +1,7 @@
 "use client";
 
+import { ContactoCitas } from "@/components/bookings/contacto-citas";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -343,6 +345,7 @@ function EditDialog({
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="mb-4 font-semibold">Editar contacto</h3>
+        <ContactoCitas key={contact.id} contactId={contact.id} />
         <div className="space-y-3">
           <div className="space-y-1.5">
             <label className="text-sm font-medium" htmlFor="edit-name">

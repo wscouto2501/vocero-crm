@@ -9,6 +9,223 @@
   "servers": [{ "url": "https://tu-crm.example.com" }],
   "security": [{ "botKey": [] }],
   "paths": {
+    "/api/bot/real-estate/properties": {
+      "get": {
+        "summary": "065 — Buscar inmuebles disponibles (FEATURE_REAL_ESTATE=true)",
+        "description": "Solo lectura, datos comerciales, BRL y m². Precios requieren purpose. Excluye archivados y no disponibles. Sin notas, documentos, dirección exacta ni datos de terceros. La ruta responde 404 antes de auth con la flag apagada. No reserva visitas.",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "conversationId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "code",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "city",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "neighborhood",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "features",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "casa",
+                "apartamento",
+                "terreno",
+                "oficina",
+                "local",
+                "bodega",
+                "finca",
+                "otro"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "purpose",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "venta",
+                "alquiler"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "minPrice",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000000000000.0
+            }
+          },
+          {
+            "in": "query",
+            "name": "maxPrice",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000000000000.0
+            }
+          },
+          {
+            "in": "query",
+            "name": "minArea",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000000000000.0
+            }
+          },
+          {
+            "in": "query",
+            "name": "maxArea",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1000000000000.0
+            }
+          },
+          {
+            "in": "query",
+            "name": "minBedrooms",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
+            }
+          },
+          {
+            "in": "query",
+            "name": "minParking",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "default": 5
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "No autorizado"
+          },
+          "404": {
+            "description": "Módulo apagado o conversación ajena/inexistente"
+          },
+          "409": {
+            "description": "ai_paused o no_org"
+          },
+          "422": {
+            "description": "Filtros inválidos, desconocidos, repetidos o rango inconsistente"
+          },
+          "429": {
+            "description": "Límite de API"
+          },
+          "503": {
+            "description": "catalog_unavailable: no confirmar precios ni disponibilidad"
+          },
+          "200": {
+            "description": "Resultado fresco; lista vacía si no hay coincidencias. Cache-Control private, no-store.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "properties",
+                    "returned",
+                    "hasMore",
+                    "currency",
+                    "checkedAt"
+                  ],
+                  "properties": {
+                    "properties": {
+                      "type": "array",
+                      "maxItems": 10,
+                      "items": {
+                        "$ref": "#/components/schemas/InmuebleComercial"
+                      }
+                    },
+                    "returned": {
+                      "type": "integer"
+                    },
+                    "hasMore": {
+                      "type": "boolean"
+                    },
+                    "currency": {
+                      "type": "string",
+                      "const": "BRL"
+                    },
+                    "checkedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/bot/context": {
       "get": {
         "summary": "Contexto de una conversación",
@@ -240,6 +457,129 @@
       "ConflictoDeAgenda": { "description": "`slot_taken` (se ocupó) o `slot_not_offered` (no se le ofreció a esta conversación); trae `slots` frescos para volver a ofrecer.", "content": { "application/json": { "schema": { "allOf": [{ "$ref": "#/components/schemas/Error" }, { "type": "object", "properties": { "slots": { "type": "array", "items": { "$ref": "#/components/schemas/Hueco" } } } }] } } } }
     },
     "schemas": {
+      "InmuebleComercial": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code",
+          "title",
+          "description",
+          "type",
+          "purpose",
+          "city",
+          "neighborhood",
+          "region",
+          "features",
+          "totalArea",
+          "privateArea",
+          "bedrooms",
+          "suites",
+          "bathrooms",
+          "parking",
+          "livingRooms",
+          "condominium",
+          "propertyTax",
+          "additionalFees",
+          "salePrice",
+          "rentPrice",
+          "financing",
+          "exchange"
+        ],
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "type": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "city": {
+            "type": "string"
+          },
+          "neighborhood": {
+            "type": "string"
+          },
+          "region": {
+            "type": "string"
+          },
+          "features": {
+            "type": "array",
+            "maxItems": 30,
+            "items": {
+              "type": "string"
+            }
+          },
+          "totalArea": {
+            "type": "number",
+            "minimum": 0
+          },
+          "privateArea": {
+            "type": "number",
+            "minimum": 0
+          },
+          "bedrooms": {
+            "type": "number",
+            "minimum": 0
+          },
+          "suites": {
+            "type": "number",
+            "minimum": 0
+          },
+          "bathrooms": {
+            "type": "number",
+            "minimum": 0
+          },
+          "parking": {
+            "type": "number",
+            "minimum": 0
+          },
+          "livingRooms": {
+            "type": "number",
+            "minimum": 0
+          },
+          "condominium": {
+            "type": "number",
+            "minimum": 0
+          },
+          "propertyTax": {
+            "type": "number",
+            "minimum": 0
+          },
+          "additionalFees": {
+            "type": "number",
+            "minimum": 0
+          },
+          "salePrice": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "rentPrice": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "financing": {
+            "type": "boolean"
+          },
+          "exchange": {
+            "type": "boolean"
+          }
+        }
+      },
       "Error": { "type": "object", "required": ["error"], "properties": { "error": { "type": "object", "required": ["code", "message"], "properties": { "code": { "type": "string" }, "message": { "type": "string" } } } } },
       "Ok": { "type": "object", "properties": { "ok": { "type": "boolean" } } },
       "Canal": { "type": "string", "description": "Informativo: la lista crece. No hagas un switch exhaustivo.", "examples": ["whatsapp", "instagram", "messenger", "tiktok"] },
@@ -249,6 +589,7 @@
           "contact": { "type": "object", "properties": { "id": { "type": "string" }, "name": { "type": ["string", "null"] }, "identity": { "type": "string" }, "waIdentity": { "type": "string" }, "channel": { "$ref": "#/components/schemas/Canal" }, "phone": { "type": ["string", "null"] }, "ficha": { "type": "object", "additionalProperties": true } } },
           "conversation": { "type": "object", "properties": { "id": { "type": "string" }, "aiEnabled": { "type": "boolean" }, "handoffAt": { "type": ["string", "null"] }, "windowOpen": { "type": "boolean" }, "windowRemainingMs": { "type": ["integer", "null"] } } },
           "lead": { "type": ["object", "null"], "properties": { "id": { "type": "string" }, "stageName": { "type": "string" }, "nextStages": { "type": "array", "description": "038 — A qué etapas puede moverlo el cerebro con `POST /api/bot/stage`: las abiertas después de la actual, en el orden del pipeline. Vacía en la última abierta o en una de cierre.", "items": { "type": "object", "required": ["id", "name"], "properties": { "id": { "type": "string" }, "name": { "type": "string" } } } } } },
+          "realEstate": { "type": "object", "description": "065 — Solo presente con FEATURE_REAL_ESTATE=true. Capacidad del catálogo en vivo; no contiene inventario.", "required": ["version", "searchPath"], "properties": { "version": { "const": 1 }, "searchPath": { "const": "/api/bot/real-estate/properties" } } },
           "adOrigen": { "type": ["object", "null"], "description": "031 — De qué anuncio llegó la persona.", "properties": { "headline": { "type": ["string", "null"] }, "body": { "type": ["string", "null"] }, "sourceType": { "type": ["string", "null"] }, "sourceUrl": { "type": ["string", "null"] }, "hasCtwaClid": { "type": "boolean" }, "capturedAt": { "type": "string" } } },
           "booking": { "type": "object", "description": "Solo con la agenda encendida.", "additionalProperties": true }
         }

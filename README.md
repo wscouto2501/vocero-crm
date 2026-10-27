@@ -236,6 +236,33 @@ tu conector en tu fork siguiendo
 cae, la cita **se agenda igual** con el enlace pendiente de reintentar: un
 tercero caído no te cuesta la conversión.
 
+#### Gestión de citas del equipo
+
+Con `AGENDA=on`, **Nueva cita** permite guardar título, descripción, notas,
+inicio y fin, tipo, contacto opcional, responsable, lugar y enlace. Las horas
+son las de la zona del negocio, aunque quien opera esté en otra zona.
+El calendario conserva Día, Semana, Mes y Lista, con filtros por responsable y
+estado. Desde la ficha del contacto se ven las próximas citas y se puede agendar.
+
+Las citas pueden confirmarse, marcarse realizadas, canceladas o como no asistió.
+Cancelar pide confirmación y conserva los datos. El formulario registra los
+cambios con su actor e historial; no reconstruye cambios anteriores a esta versión.
+Los solapamientos del responsable se rechazan con aviso. Se conserva además el
+candado original: dos citas activas no pueden empezar en el mismo instante en
+la agenda del negocio, aunque tengan responsables diferentes.
+
+El aviso configurable se muestra **dentro de la agenda abierta**, desde los
+minutos indicados antes del inicio, para su responsable o para el equipo si no
+hay responsable. Se actualiza cada minuto; no es una notificación push ni envía
+WhatsApp, correo o mensajes al cerrar la aplicación. No requiere servicios pagos.
+Las nuevas citas de este formulario no crean reuniones en proveedores externos;
+puedes pegar un enlace. Las reservas de Zoom/Google conservan sus acciones de
+reprogramación/cancelación en el panel original.
+
+La migración aditiva `0026_secret_luckman.sql` se aplica al arrancar la nueva
+imagen; no borra ni recrea tablas. Para verificar solo en un entorno aislado,
+consulta `tests/e2e/us-gestion-citas.md` y `scripts/e2e-gestion-citas.mjs`.
+
 ### 📈 Conversiones de anuncios (opcional, apagada por defecto)
 
 Si anuncias con **Click-to-WhatsApp**, Meta sabe qué conversaciones empezaron
@@ -306,7 +333,7 @@ Meta y tu proveedor LLM opcional.
 ## Instalación (~15 minutos)
 
 Cada versión se publica como imagen de Docker:
-`ghcr.io/kevinrivm/vocero-crm:<versión>` (p. ej. `2.5.2`). Instalar desde
+`ghcr.io/kevinrivm/vocero-crm:<versión>` (p. ej. `2.5.1`). Instalar desde
 la imagen es el camino recomendado: tu servidor la descarga en vez de
 construirla. Construir desde el código sigue funcionando, y es lo que
 necesitas en un VPS ARM o si tu fork cambia el código.
@@ -358,7 +385,7 @@ código si no la encuentra ni en el registro ni en tu máquina. Así que:
   `--build` Compose puede correr la oficial en vez de tus cambios.
 
 Caddy emite el certificado HTTPS solo. Verifica con
-`https://crm.tudominio.com/api/health` → `{"ok":true,"version":"2.5.2",…}`.
+`https://crm.tudominio.com/api/health` → `{"ok":true,"version":"2.5.1",…}`.
 
 ### Otras plataformas: Render, Fly y Railway
 
@@ -367,7 +394,7 @@ imagen publicada, montan `/data` y vigilan `/api/health`; cada uno declara lo
 que su plataforma le deja declarar y documenta, en comentarios, lo que queda a
 mano. La imagen va fijada a la versión (una prueba lo exige). Verifica igual
 que arriba: `curl -s https://<tu-url>/api/health` →
-`{"ok":true,"version":"2.5.2",…,"mediaWritable":true}`.
+`{"ok":true,"version":"2.5.1",…,"mediaWritable":true}`.
 
 **Render** — [`render.yaml`](render.yaml) es un Blueprint completo: servicio
 web desde la imagen, base Postgres gestionada, disco de 1 GB en `/data`,
@@ -400,7 +427,7 @@ el dominio y las variables se crean con la CLI, con los comandos exactos
 escritos en el propio archivo (`railway add --database postgres`,
 `railway volume add --mount-path /data`, `railway domain --port 3000`,
 `railway variable set …`, `railway up`). Para la imagen publicada sin build:
-`railway add --image ghcr.io/kevinrivm/vocero-crm:2.5.2`, y entonces el
+`railway add --image ghcr.io/kevinrivm/vocero-crm:2.5.1`, y entonces el
 healthcheck se fija en el panel. Railway declaró obsoleto este formato a
 favor de su Infrastructure as Code (`.railway/railway.ts`); lo sigue leyendo
 hasta el 2026-12-01.
@@ -920,3 +947,13 @@ aprender a convertirte en Meta Tech Provider y monetizar con tu agencia de IA?
 de producción (webhook firmado, ingesta idempotente, cifrado de tokens) vienen
 de un proyecto de referencia privado en producción, portados y simplificados
 para este repo.
+
+### Gestión inmobiliaria opcional
+
+`FEATURE_REAL_ESTATE=true` habilita inventario, interesados, propietarios, corredores,
+visitas, oportunidades y dashboard en una sección adicional. Por defecto está
+apagada. [Instalación, permisos y Docker](docs/gestion-inmobiliaria.md).
+
+Para responder consultas de inmuebles por WhatsApp, instala el
+[adaptador opcional de Nea y la API de catálogo](docs/inmobiliaria-whatsapp.md).
+Consulta disponibilidad y precios actuales sin exponer notas ni documentos.

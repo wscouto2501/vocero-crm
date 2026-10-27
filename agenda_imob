@@ -1,0 +1,5 @@
+AGENDA=on
+#FEATURE_REAL_ESTATE=true
+docker compose up -d --build app
+
+docker compose up -d --force-recreate

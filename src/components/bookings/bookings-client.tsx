@@ -27,6 +27,8 @@ import {
 import { addDaysISO, dayIsoInTz } from "@/lib/time/slots";
 import type { WeeklyHours } from "@/server/agenda/settings";
 import { cn } from "@/lib/utils";
+import { CitaForm } from "./cita-form";
+import { Button } from "@/components/ui/button";
 import { AgendaList } from "./agenda-list";
 import { BlockDialog } from "./block-dialog";
 import { BookingDrawer, type ActResult } from "./booking-drawer";
@@ -103,7 +105,21 @@ export function BookingsClient({
   const [blockDraft, setBlockDraft] = useState<{ day: string; time: string } | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [now, setNow] = useState<number | null>(null);
+  const [form, setForm] = useState<Booking | "new" | null>(null);
+  const [responsible, setResponsible] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [options, setOptions] = useState<{ members: { id: string; name: string }[]; reminders: { id: string; title: string | null; scheduledAt: string }[] }>({ members: [], reminders: [] });
+  const initialContact = useRef<string | undefined>(undefined);
   const seq = useRef(0);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("contact")) initialContact.current = params.get("contact") ?? undefined;
+    if (params.get("crear") === "1") setForm("new");
+    const loadOptions = () => fetch("/api/bookings/manage").then((r) => r.ok ? r.json() : null).then((d) => { if (d) setOptions(d); }).catch(() => {});
+    void loadOptions();
+    const timer = setInterval(loadOptions, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     setShowCancelled(readPref(CANCELLED_KEY) === "1");
@@ -192,8 +208,10 @@ export function BookingsClient({
 
   const all = useMemo(() => loaded?.bookings ?? [], [loaded]);
   const visible = useMemo(
-    () => calendarVisible(all, { showCancelled, showTests }),
-    [all, showCancelled, showTests]
+    () => calendarVisible(all, { showCancelled: showCancelled || statusFilter === "cancelada", showTests }).filter((b) =>
+      (!responsible || (responsible === "none" ? !b.responsibleUserId : b.responsibleUserId === responsible)) &&
+      (!statusFilter || (statusFilter === "confirmada" ? b.status === "agendada" && Boolean(b.confirmedAt) : b.status === statusFilter && (statusFilter !== "agendada" || !b.confirmedAt)))),
+    [all, showCancelled, showTests, responsible, statusFilter]
   );
   const counts = useMemo(() => {
     const inRange = all.filter((b) => {
@@ -290,10 +308,21 @@ export function BookingsClient({
   }
 
   async function act(b: Booking, body: Record<string, unknown>): Promise<ActResult> {
-    const res = await fetch(`/api/bookings/${b.id}`, {
+    const managed = Boolean(b.title) && (!b.connector || b.connector === "enlace-fijo") && body.action !== "retry_link";
+    const startUtc = typeof body.startUtc === "string" ? body.startUtc : b.scheduledAtUtc;
+    const payload = managed ? {
+      title: b.title, description: b.description ?? null, notes: b.notes,
+      appointmentType: b.appointmentType ?? "Atención", location: b.location ?? null,
+      meetingLink: b.meetingLink, contactId: b.contact?.id ?? null,
+      responsibleUserId: b.responsibleUserId ?? null,
+      reminderMinutes: b.reminderMinutes ?? null,
+      startUtc, endUtc: new Date(Date.parse(startUtc) + b.durationMinutes * 60000).toISOString(),
+      status: body.action === "cancel" ? "cancelada" : body.action === "status" ? body.status : b.confirmedAt ? "confirmada" : b.status,
+    } : body;
+    const res = await fetch(`/api/bookings/${b.id}${managed ? "/manage" : ""}`, {
       method: "PATCH",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(payload),
     }).catch(() => null);
     if (!res?.ok) {
       const data = (await res?.json().catch(() => null)) as {
@@ -334,6 +363,17 @@ export function BookingsClient({
         onBlock={() => openBlock()}
       />
 
+      <div className="flex flex-wrap items-center gap-2 border-b px-4 py-2">
+        <Button size="sm" onClick={() => setForm("new")}>Nueva cita</Button>
+        <select aria-label="Filtrar por responsable" className="h-9 rounded-md border bg-background px-2 text-sm" value={responsible} onChange={(e) => setResponsible(e.target.value)}>
+          <option value="">Todos los responsables</option><option value="none">Agenda compartida</option>{options.members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+        </select>
+        <select aria-label="Filtrar por estado" className="h-9 rounded-md border bg-background px-2 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="">Todos los estados</option><option value="agendada">Agendada</option><option value="confirmada">Confirmada</option><option value="realizada">Realizada</option><option value="cancelada">Cancelada</option><option value="no_show">No asistió</option>
+        </select>
+        {options.reminders.map((r) => <p key={r.id} role="status" className="rounded bg-warning-tint px-2 py-1 text-sm text-warning-text">Recordatorio: {r.title ?? "Cita"} · {new Date(r.scheduledAt).toLocaleTimeString("es", { timeZone: timezone, hour: "2-digit", minute: "2-digit" })}</p>)}
+      </div>
+      {form && <CitaForm key={form === "new" ? "new" : form.id} booking={form === "new" ? undefined : form} initialContactId={initialContact.current} initialDate={anchor} timezone={timezone} onClose={() => setForm(null)} onSaved={(day) => { setForm(null); reveal(day); void reload(); }} />}
       {/* En escritorio ancho el panel de la cita EMPUJA el calendario en vez
           de taparlo: la semana entera sigue a la vista con la cita marcada. */}
       <div className="flex min-h-0 flex-1">
@@ -423,6 +463,8 @@ export function BookingsClient({
             timezone={timezone}
             today={today}
             nowMs={now ?? Date.now()}
+            responsibleName={options.members.find((m) => m.id === selected.responsibleUserId)?.name}
+            onEdit={() => setForm(selected)}
             onClose={closeDrawer}
             onAct={(body) => act(selected, body)}
             onRescheduled={(startUtc) => reveal(dayIsoInTz(new Date(startUtc), timezone))}

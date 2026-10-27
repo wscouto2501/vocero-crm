@@ -6,6 +6,7 @@ import { aparienciaActual } from "@/server/apariencia";
 import { getBranding } from "@/server/branding";
 import { AppShell } from "@/components/app-shell";
 import { resolveCommit } from "@/lib/version";
+import { inmobiliariaActiva } from "@/server/inmobiliaria/flag";
 import { agendaEnabled } from "@/server/agenda/flag";
 import { enabledChannels } from "@/server/channels/enabled";
 import { navKicker } from "@/lib/channels";
@@ -42,6 +43,7 @@ export default async function AppLayout({
       // prop, igual que los canales de la Bandeja. El nav es un componente de
       // cliente: no puede —ni debe— leer variables de entorno.
       agenda={agendaEnabled()}
+      inmobiliaria={inmobiliariaActiva()}
       kicker={navKicker([...enabledChannels()])}
       aviso={<AvisoIaBanner aviso={aviso} />}
     >

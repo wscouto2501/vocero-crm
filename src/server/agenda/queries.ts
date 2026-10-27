@@ -26,6 +26,13 @@ export type BookingListItem = {
   linkPending: boolean;
   isTest: boolean;
   notes: string | null;
+  title?: string | null;
+  description?: string | null;
+  appointmentType?: string | null;
+  location?: string | null;
+  responsibleUserId?: string | null;
+  confirmedAt?: string | null;
+  reminderMinutes?: number | null;
 };
 
 /** Tope del listado sin rango: el de siempre, que leen los guiones E2E. */
@@ -138,5 +145,12 @@ function toListItem(r: Row, timezone: string): BookingListItem {
     linkPending: r.booking.linkPending,
     isTest: r.booking.isTest,
     notes: r.booking.notes,
+    title: r.booking.title,
+    description: r.booking.description,
+    appointmentType: r.booking.appointmentType,
+    location: r.booking.location,
+    responsibleUserId: r.booking.responsibleUserId,
+    confirmedAt: r.booking.confirmedAt?.toISOString() ?? null,
+    reminderMinutes: r.booking.reminderMinutes,
   };
 }

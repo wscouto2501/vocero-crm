@@ -1,7 +1,6 @@
 import { and, asc, desc, eq, gt } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
-import { scoped } from "@/lib/db/tenant";
 import { publish } from "@/server/events/bus";
 import { renderKb } from "@/server/ai/prompts";
 import { construirEventoOlvido } from "@/server/brains/contract";
@@ -285,8 +284,7 @@ async function runConversation(
   const messages = await db
     .select()
     .from(schema.message)
-    // 064 — Acotado a la organización: así usa `message_org_conv_idx`.
-    .where(scoped(schema.message.organizationId, organizationId, eq(schema.message.conversationId, convId)))
+    .where(eq(schema.message.conversationId, convId))
     .orderBy(asc(schema.message.createdAt));
 
   await olvidar(organizationId, convId, contactId);
@@ -364,9 +362,7 @@ async function turnoPorDespacho(
       .select({ id: schema.message.id })
       .from(schema.message)
       .where(
-        scoped(
-          schema.message.organizationId,
-          organizationId,
+        and(
           eq(schema.message.conversationId, conversationId),
           eq(schema.message.direction, "out"),
           gt(schema.message.createdAt, desde)

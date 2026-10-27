@@ -39,7 +39,7 @@
 # ============================================================
 services:
   app:
-    image: ghcr.io/kevinrivm/vocero-crm:${VOCERO_CRM_VERSION:-2.5.2}
+    image: ghcr.io/kevinrivm/vocero-crm:${VOCERO_CRM_VERSION:-2.5.1}
     build: .
     restart: unless-stopped
     environment:
@@ -59,6 +59,7 @@ services:
       # Opcionales: vacías = apagadas (guía de cada una en .env.example).
       CHANNELS: ${CHANNELS:-}
       AGENDA: ${AGENDA:-}
+      FEATURE_REAL_ESTATE: ${FEATURE_REAL_ESTATE:-false}
       ATRIBUCION: ${ATRIBUCION:-}
       BOT_API_KEY: ${BOT_API_KEY:-}
       # 2.0 — El cerebro: por defecto, el servicio `nea` de abajo. Con la

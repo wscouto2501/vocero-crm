@@ -22,6 +22,7 @@ const prefixes = {
   // 015 — motor de agenda
   calendarSettings: "cal",
   booking: "bk",
+  bookingHistory: "bkh",
   offeredSlot: "ofs",
   zoomCredentials: "zcred",
   googleCredentials: "gcred",

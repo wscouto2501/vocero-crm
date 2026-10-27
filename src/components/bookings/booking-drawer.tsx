@@ -34,7 +34,11 @@ export function BookingDrawer({
   onClose,
   onAct,
   onRescheduled,
+  onEdit,
+  responsibleName,
 }: {
+  responsibleName?: string;
+  onEdit?: () => void;
   booking: Booking;
   timezone: string;
   today: string;
@@ -65,6 +69,7 @@ export function BookingDrawer({
   }, [onClose]);
 
   async function run(body: Record<string, unknown>): Promise<boolean> {
+    if (body.action === "cancel" && !window.confirm("¿Cancelar esta cita? Su historial se conservará.")) return false;
     setBusy(true);
     setError(null);
     const result = await onAct(body);
@@ -167,6 +172,14 @@ export function BookingDrawer({
             )}
           </section>
 
+          {isSession && <section className="space-y-2 border-b p-4">
+            {b.contact && <p className="text-sm">Contacto: {b.contact.name}</p>}
+            <p className="text-sm">Responsable: {responsibleName ?? "Agenda compartida"}</p>
+            {b.appointmentType && <p className="text-sm">Tipo: {b.appointmentType}</p>}
+            {b.description && <p className="whitespace-pre-wrap text-sm">{b.description}</p>}
+            {b.location && <p className="text-sm">Lugar: {b.location}</p>}
+            {!b.isTest && onEdit && <Button size="sm" variant="secondary" onClick={onEdit}>Editar detalles e historial</Button>}
+          </section>}
           {/* Con quién y dónde (la nota de un bloqueo ya es su título) */}
           {((b.contact && b.conversationId) || b.meetingLink || (b.notes && isSession)) && (
             <section className="space-y-2 border-b p-4">

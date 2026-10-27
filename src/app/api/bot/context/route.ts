@@ -8,6 +8,7 @@ import { isWindowOpen, windowRemainingMs } from "@/server/inbox/window";
 import { windowMsFor } from "@/server/channels/capabilities";
 import { citasParaContexto } from "@/server/agenda/context";
 import { anuncioDelContacto } from "@/server/attribution/store";
+import { capacidadInmobiliaria } from "@/server/inmobiliaria/catalogo-bot";
 import { siguientesDelLead } from "@/server/bot/stage";
 
 export const dynamic = "force-dynamic";
@@ -173,5 +174,6 @@ export async function GET(req: Request) {
      * y uno que no lo lee no cambia. Aditivo.
      */
     ...(booking ? { booking } : {}),
+    ...capacidadInmobiliaria(),
   });
 }
